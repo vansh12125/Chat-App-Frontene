@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.glass-glow {
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.08);
+}
+
+*{
+   -ms-overflow-style: none;  
+  scrollbar-width: none;     
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  
+  scrollbar-width: none;     
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;             
+}
+
+
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.glass-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
