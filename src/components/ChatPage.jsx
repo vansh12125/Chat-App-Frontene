@@ -7,17 +7,19 @@ import { AuthContext } from "../context/AuthContext";
 import SockJS from "sockjs-client";
 import toast from "react-hot-toast";
 import avatar from "../assets/avatar.png";
-
+import { removeUserJoined } from "../services/AuthService";
 
 const notificationSound = new Audio("/sounds/notification.mp3");
 
 const ChatPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user ,setUser} = useContext(AuthContext);
 
   const currentUser = user?.username || "Guest";
+  const currentUserId = user?.id || null;
 
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
   const [roomName, setRoomName] = useState("");
   const [createdBy, setCreatedBy] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -31,14 +33,12 @@ const ChatPage = () => {
   const inputRef = useRef(null);
   const stompClientRef = useRef(null);
 
-  
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
 
-  
   useEffect(() => {
     if (!roomId) return;
 
@@ -46,13 +46,16 @@ const ChatPage = () => {
       .get(`/rooms/room/${roomId}`)
       .then((res) => {
         setRoomName(res.data.roomName);
-        setCreatedBy(res.data.createdBy);
+        setCreatedBy(res.data.createdByUsername);
         setCreatedAt(res.data.createdAt);
+        setShowDeleteButton(res.data.createdByUserId === currentUserId);
       })
-      .catch(() => toast.error("Failed to load room"));
-  }, [roomId]);
+      .catch(async () => {
+        toast.error("Failed to load room");
+        navigate("/join");
+      });
+  }, [roomId, currentUserId]);
 
- 
   useEffect(() => {
     if (!roomId) return;
 
@@ -67,7 +70,6 @@ const ChatPage = () => {
       .catch(() => toast.error("Failed to load messages"));
   }, [roomId]);
 
- 
   useEffect(() => {
     if (!roomId) return;
 
@@ -82,23 +84,21 @@ const ChatPage = () => {
         client.subscribe(`/topic/room/${roomId}`, (msg) => {
           try {
             const message = JSON.parse(msg.body);
-            if (!message?.content || !message?.sender) return;
+            if (!message?.content || !message?.senderId) return;
 
             setMessages((prev) => [...prev, message]);
             scrollToBottom();
 
-           
             if (
               document.hidden &&
-              message.sender !== currentUser &&
+              message.senderUsername !== currentUser &&
               Notification.permission === "granted"
             ) {
-              new Notification(`New message from ${message.sender}`, {
+              new Notification(`New message from ${message.senderUsername}`, {
                 body: message.content,
                 icon: "/icons/image.png",
               });
-
-              notificationSound.current?.play().catch(() => {});
+              notificationSound.play().catch(() => {});
             }
           } catch (err) {
             console.error("Invalid WS message", err);
@@ -119,27 +119,16 @@ const ChatPage = () => {
     };
   }, [roomId, currentUser]);
 
-  
   const sendMessage = () => {
-    if (!connected) {
-      toast.error("Connecting…");
-      return;
-    }
-
-    if (!input.trim()) {
-      toast.error("Message cannot be empty");
-      return;
-    }
-
-    if (input.length > 2000) {
-      toast.error("Message too long");
-      return;
-    }
+    if (!connected) return toast.error("Connecting…");
+    if (!input.trim()) return toast.error("Message cannot be empty");
+    if (input.length > 2000) return toast.error("Message too long");
 
     stompClientRef.current?.publish({
       destination: `/app/sendMessage/${roomId}`,
       body: JSON.stringify({
-        sender: currentUser,
+        senderUsername: currentUser,
+        senderId: currentUserId,
         content: input,
       }),
     });
@@ -148,7 +137,19 @@ const ChatPage = () => {
     inputRef.current?.focus();
   };
 
-  
+  const leaveRoom = async () => {
+  try {
+    if (!window.confirm("Leave this room?")) return;
+    const res = await removeUserJoined(roomId);
+    setUser(res);
+    localStorage.setItem("user", JSON.stringify(res));
+    navigate("/join");
+  } catch (err) {
+    toast.error("Failed to leave room");
+  }
+};
+
+
   const scrollToBottom = () => {
     setTimeout(() => {
       chatBoxRef.current?.scrollTo({
@@ -158,7 +159,22 @@ const ChatPage = () => {
     }, 50);
   };
 
-  
+  const deleteRoom = async (id) => {
+  try {
+    if (!window.confirm("Delete this room permanently?")) return;
+    await api.delete(`/rooms/room/${id}`);
+    const res = await removeUserJoined(id);
+    setUser(res);
+    localStorage.setItem("user", JSON.stringify(res));
+
+    toast.success("Room deleted");
+    navigate("/join");
+  } catch (err) {
+    toast.error(err.response?.data || "Failed to delete room");
+  }
+};
+
+
   const copyRoomId = async () => {
     await navigator.clipboard.writeText(roomId);
     toast.success("Room ID copied");
@@ -166,7 +182,6 @@ const ChatPage = () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white">
-      
       <header className="fixed top-0 z-50 w-full backdrop-blur-xl bg-white/5 border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div onClick={() => setShowRoomInfo(true)} className="cursor-pointer">
@@ -177,7 +192,7 @@ const ChatPage = () => {
           </div>
 
           <button
-            onClick={() => navigate("/join")}
+            onClick={leaveRoom}
             className="px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
           >
             Leave
@@ -185,7 +200,6 @@ const ChatPage = () => {
         </div>
       </header>
 
-      
       <main
         ref={chatBoxRef}
         className="pt-20 pb-28 px-4 max-w-4xl mx-auto h-[100dvh] overflow-y-auto no-scrollbar"
@@ -194,12 +208,12 @@ const ChatPage = () => {
           <div
             key={i}
             className={`flex mb-4 ${
-              m.sender === currentUser ? "justify-end" : "justify-start"
+              m.senderId === currentUserId ? "justify-end" : "justify-start"
             }`}
           >
             <div
               className={`max-w-xs rounded-2xl p-4 backdrop-blur-xl border ${
-                m.sender === currentUser
+                m.senderId === currentUserId
                   ? "bg-green-500/20 border-green-400/30"
                   : "bg-white/10 border-white/20"
               }`}
@@ -211,7 +225,7 @@ const ChatPage = () => {
                 />
                 <div>
                   <p className="text-xs text-gray-300 font-semibold">
-                    {m.sender}
+                    {m.senderUsername}
                   </p>
                   <p className="text-sm">{m.content}</p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -227,7 +241,6 @@ const ChatPage = () => {
         ))}
       </main>
 
-      
       <div className="fixed bottom-4 w-full">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3 rounded-full backdrop-blur-xl bg-white/10 border border-white/20">
           <input
@@ -253,7 +266,6 @@ const ChatPage = () => {
         </div>
       </div>
 
-      
       {showRoomInfo && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
           <div className="bg-slate-900 p-6 rounded-3xl border border-white/20 w-96">
@@ -275,9 +287,18 @@ const ChatPage = () => {
             <p className="text-gray-400 text-sm mt-3">Created At</p>
             <p>{new Date(createdAt).toLocaleString()}</p>
 
+            {showDeleteButton && (
+              <button
+                onClick={() => deleteRoom(roomId)}
+                className="mt-6 w-full py-2 rounded-full bg-red-500/70"
+              >
+                Delete Room
+              </button>
+            )}
+
             <button
               onClick={() => setShowRoomInfo(false)}
-              className="mt-6 w-full py-2 rounded-full bg-red-500/70"
+              className="mt-6 w-full py-2 rounded-full bg-white/10"
             >
               Close
             </button>

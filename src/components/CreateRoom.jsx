@@ -27,7 +27,7 @@ const CreateRoom = () => {
 
   async function handleCreateRoom() {
     if (!validateInput()) return;
-    const response = await createRoom(roomName, user.username);
+    const response = await createRoom(roomName, user.id,user.username);
     setRoomId(response.roomId);
     setOpen(true);
     toast.success("Room created successfully 🎉");

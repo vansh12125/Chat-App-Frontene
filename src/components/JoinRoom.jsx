@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import { joinRoom, updateUserJoined } from "../services/RoomService";
 import { useNavigate } from "react-router";
 import { AuthContext } from "../context/AuthContext";
+import { MdClose } from "react-icons/md";
+import { removeUserJoined } from "../services/AuthService";
 
 const JoinRoom = () => {
   const { user, setUser, loading } = useContext(AuthContext);
@@ -16,6 +18,17 @@ const JoinRoom = () => {
       </div>
     );
   }
+
+  const leaveJoinedRoom = async (roomId) => {
+    try {
+      const res = await removeUserJoined(roomId);
+      setUser(res);
+      localStorage.setItem("user", JSON.stringify(res));
+      toast.success("Left room");
+    } catch {
+      toast.error("Failed to leave room");
+    }
+  };
 
   if (!user) return null;
 
@@ -100,14 +113,27 @@ const JoinRoom = () => {
           ) : (
             <div className="flex flex-col gap-3 overflow-y-auto pr-2 max-h-64 md:max-h-80 custom-scrollbar">
               {joinedRooms.map((room, index) => (
-                <button
+                <div
                   key={index}
+                  className="relative w-full p-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 transition text-left"
                   onClick={() => navigate(`/chat/${room.roomId}`)}
-                  className="w-full p-3 rounded-xl bg-white/10 border border-white/20 hover:bg-white/20 transition text-left"
                 >
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      leaveJoinedRoom(room.roomId);
+                    }}
+                    className="absolute top-2 right-2 p-1 rounded-full
+      text-gray-400 hover:text-red-400 hover:bg-white/10"
+                    title="Leave room"
+                  >
+                    <MdClose size={16} />
+                  </button>
+
                   <div className="font-medium">{room.roomName}</div>
                   <div className="text-xs text-gray-400">{room.roomId}</div>
-                </button>
+                </div>
               ))}
             </div>
           )}

@@ -1,12 +1,13 @@
 import toast from "react-hot-toast";
 import { api } from "../config/AxiosHelper";
 
-export const createRoom = async (roomName, user) => {
+export const createRoom = async (roomName, user,username) => {
   try {
     
     const response = await api.post("/rooms/room", {
       roomName,
       "createdBy": user,
+      "username": username
     });
     
     return response.data;

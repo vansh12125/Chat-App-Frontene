@@ -2,6 +2,7 @@ import { useState } from "react";
 import { registerUser } from "../services/AuthService";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9]{3,20}$/;
 const PASSWORD_REGEX = /^[a-zA-Z0-9]{6,20}$/;
@@ -9,6 +10,7 @@ const PASSWORD_REGEX = /^[a-zA-Z0-9]{6,20}$/;
 const Register = () => {
   const [data, setData] = useState({ username: "", password: "" });
   const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
@@ -33,9 +35,8 @@ const Register = () => {
   }
 
   return (
-    <div className=" flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white mt-16">
+    <div className=" w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white mt-16">
       <div className="w-full max-w-md p-10 rounded-3xl backdrop-blur-2xl bg-white/10 border border-white/20 shadow-[0_0_60px_rgba(255,255,255,0.08)]">
-
         <h1 className="text-3xl font-semibold text-center mb-2">
           Create Account
         </h1>
@@ -47,25 +48,32 @@ const Register = () => {
           <input
             placeholder="Username"
             value={data.username}
-            onChange={(e) =>
-              setData({ ...data, username: e.target.value })
-            }
+            onChange={(e) => setData({ ...data, username: e.target.value })}
             className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20
                        placeholder-gray-400 focus:outline-none focus:ring-2
                        focus:ring-emerald-500/50 backdrop-blur-md"
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={data.password}
-            onChange={(e) =>
-              setData({ ...data, password: e.target.value })
-            }
-            className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20
-                       placeholder-gray-400 focus:outline-none focus:ring-2
-                       focus:ring-emerald-500/50 backdrop-blur-md"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={data.password}
+              onChange={(e) => setData({ ...data, password: e.target.value })}
+              className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20
+               placeholder-gray-400 focus:outline-none focus:ring-2
+               focus:ring-emerald-500/50 backdrop-blur-md"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2
+               text-gray-400 hover:text-black/70"
+            >
+              {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+            </button>
+          </div>
 
           <button
             type="submit"

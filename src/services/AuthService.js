@@ -17,3 +17,11 @@ export const getProfile = () =>
 
 export const updateProfile = (data) =>
   api.put("/auth/profile", data);
+
+export const deleteRoom = (roomId) =>
+  api.delete(`/rooms/room/${roomId}`);
+
+export const removeUserJoined = async (roomId) => {
+  const res = await api.post("/auth/leave", { roomId });
+  return res.data;
+};
