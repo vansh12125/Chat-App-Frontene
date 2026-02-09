@@ -8,96 +8,147 @@ import SockJS from "sockjs-client";
 import toast from "react-hot-toast";
 import avatar from "../assets/avatar.png";
 
+
+const notificationSound = new Audio("/sounds/notification.mp3");
+
 const ChatPage = () => {
-  const [roomName, setRoomName] = useState("");
-  const [connected, setConnected] = useState(false);
-
-  const [showRoomInfo, setShowRoomInfo] = useState(false);
-
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const [createdBy, setCreatedBy] = useState("");
-  const [createdAt, setCreatedAt] = useState("");
 
   const currentUser = user?.username || "Guest";
 
+  const [roomName, setRoomName] = useState("");
+  const [createdBy, setCreatedBy] = useState("");
+  const [createdAt, setCreatedAt] = useState("");
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [showRoomInfo, setShowRoomInfo] = useState(false);
 
-  const inputRef = useRef(null);
   const chatBoxRef = useRef(null);
+  const inputRef = useRef(null);
   const stompClientRef = useRef(null);
 
+  
   useEffect(() => {
-    async function loadRoom() {
-      const res = await api.get(`/rooms/room/${roomId}`);
-      setRoomName(res.data.roomName);
-      setCreatedBy(res.data.createdBy);
-      setCreatedAt(res.data.createdAt);
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
     }
-    if (roomId) loadRoom();
+  }, []);
+
+  
+  useEffect(() => {
+    if (!roomId) return;
+
+    api
+      .get(`/rooms/room/${roomId}`)
+      .then((res) => {
+        setRoomName(res.data.roomName);
+        setCreatedBy(res.data.createdBy);
+        setCreatedAt(res.data.createdAt);
+      })
+      .catch(() => toast.error("Failed to load room"));
   }, [roomId]);
 
+ 
   useEffect(() => {
-    async function loadMessages() {
-      const res = await api.get(`/messages/${roomId}?page=0&size=50`);
-      setMessages(res.data.reverse());
-      scrollToBottom();
-    }
-    loadMessages();
+    if (!roomId) return;
+
+    api
+      .get(`/messages/${roomId}?page=0&size=50`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setMessages(res.data.reverse());
+          scrollToBottom();
+        }
+      })
+      .catch(() => toast.error("Failed to load messages"));
   }, [roomId]);
 
+ 
   useEffect(() => {
+    if (!roomId) return;
+
     const client = new Client({
       webSocketFactory: () =>
         new SockJS(`${import.meta.env.VITE_API_URL}/chat`),
       reconnectDelay: 5000,
+
       onConnect: () => {
         setConnected(true);
+
         client.subscribe(`/topic/room/${roomId}`, (msg) => {
-          setMessages((prev) => [...prev, JSON.parse(msg.body)]);
-          scrollToBottom();
+          try {
+            const message = JSON.parse(msg.body);
+            if (!message?.content || !message?.sender) return;
+
+            setMessages((prev) => [...prev, message]);
+            scrollToBottom();
+
+           
+            if (
+              document.hidden &&
+              message.sender !== currentUser &&
+              Notification.permission === "granted"
+            ) {
+              new Notification(`New message from ${message.sender}`, {
+                body: message.content,
+                icon: "/icons/image.png",
+              });
+
+              notificationSound.current?.play().catch(() => {});
+            }
+          } catch (err) {
+            console.error("Invalid WS message", err);
+          }
         });
       },
+
+      onDisconnect: () => setConnected(false),
+      onStompError: () => toast.error("WebSocket error"),
     });
 
     client.activate();
     stompClientRef.current = client;
 
     return () => {
-      setConnected(false);
       client.deactivate();
+      setConnected(false);
     };
-  }, [roomId]);
+  }, [roomId, currentUser]);
 
+  
   const sendMessage = () => {
     if (!connected) {
-      toast.error("Connecting to chat… please wait");
+      toast.error("Connecting…");
       return;
     }
 
-    if (input.trim().length === 0) {
-      toast.error("Message cannot be empty!");
-      setInput("");
-      inputRef.current.focus();
+    if (!input.trim()) {
+      toast.error("Message cannot be empty");
       return;
     }
-    if (!input.trim() || input.length > 2000) {
-      toast.error("Message is too long! Max 2000 characters.");
-      return;
-    }
-    if (!stompClientRef.current?.connected) return;
 
-    stompClientRef.current.publish({
+    if (input.length > 2000) {
+      toast.error("Message too long");
+      return;
+    }
+
+    stompClientRef.current?.publish({
       destination: `/app/sendMessage/${roomId}`,
-      body: JSON.stringify({ sender: currentUser, content: input }),
+      body: JSON.stringify({
+        sender: currentUser,
+        content: input,
+      }),
     });
 
     setInput("");
-    inputRef.current.focus();
+    inputRef.current?.focus();
   };
 
+  
   const scrollToBottom = () => {
     setTimeout(() => {
       chatBoxRef.current?.scrollTo({
@@ -107,14 +158,15 @@ const ChatPage = () => {
     }, 50);
   };
 
-  async function copyRoomId() {
+  
+  const copyRoomId = async () => {
     await navigator.clipboard.writeText(roomId);
-    toast.success("Room ID copied!");
-  }
+    toast.success("Room ID copied");
+  };
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white">
-      {/* HEADER */}
+      
       <header className="fixed top-0 z-50 w-full backdrop-blur-xl bg-white/5 border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
           <div onClick={() => setShowRoomInfo(true)} className="cursor-pointer">
@@ -126,28 +178,28 @@ const ChatPage = () => {
 
           <button
             onClick={() => navigate("/join")}
-            className="px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 transition"
+            className="px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
           >
             Leave
           </button>
         </div>
       </header>
 
-      {/* CHAT */}
+      
       <main
         ref={chatBoxRef}
         className="pt-20 pb-28 px-4 max-w-4xl mx-auto h-[100dvh] overflow-y-auto no-scrollbar"
       >
-        {messages.map((message, index) => (
+        {messages.map((m, i) => (
           <div
-            key={index}
+            key={i}
             className={`flex mb-4 ${
-              message.sender === currentUser ? "justify-end" : "justify-start"
+              m.sender === currentUser ? "justify-end" : "justify-start"
             }`}
           >
             <div
-              className={`max-w-xs rounded-2xl p-4 backdrop-blur-xl border shadow-lg ${
-                message.sender === currentUser
+              className={`max-w-xs rounded-2xl p-4 backdrop-blur-xl border ${
+                m.sender === currentUser
                   ? "bg-green-500/20 border-green-400/30"
                   : "bg-white/10 border-white/20"
               }`}
@@ -159,11 +211,11 @@ const ChatPage = () => {
                 />
                 <div>
                   <p className="text-xs text-gray-300 font-semibold">
-                    {message.sender}
+                    {m.sender}
                   </p>
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm">{m.content}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {new Date(message.timeStamp).toLocaleTimeString([], {
+                    {new Date(m.timeStamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
@@ -175,6 +227,7 @@ const ChatPage = () => {
         ))}
       </main>
 
+      
       <div className="fixed bottom-4 w-full">
         <div className="max-w-3xl mx-auto flex items-center gap-3 px-4 py-3 rounded-full backdrop-blur-xl bg-white/10 border border-white/20">
           <input
@@ -186,83 +239,48 @@ const ChatPage = () => {
             className="flex-1 bg-transparent outline-none text-white"
           />
 
-          <button
-            className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 
-             flex items-center justify-center"
-          >
+          <button className="h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
             <MdAttachFile size={18} />
           </button>
 
           <button
             disabled={!connected}
             onClick={sendMessage}
-            className="h-10 w-10 rounded-full bg-green-500/70 hover:bg-green-500
-             flex items-center justify-center"
+            className="h-10 w-10 rounded-full bg-green-500/70 hover:bg-green-500 flex items-center justify-center"
           >
             <MdSend size={18} />
           </button>
         </div>
       </div>
 
+      
       {showRoomInfo && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center">
-          <div className="w-full md:max-w-md bg-slate-900/95 rounded-t-3xl md:rounded-3xl p-6 border border-white/20">
-            <div className="md:hidden w-12 h-1 bg-gray-500/40 rounded-full mx-auto mb-4" />
-
-            <h2 className="text-xl font-semibold text-center mb-6">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
+          <div className="bg-slate-900 p-6 rounded-3xl border border-white/20 w-96">
+            <h2 className="text-xl font-semibold mb-4 text-center">
               Room Information
             </h2>
 
-            <div className="space-y-4 text-sm">
-              <div>
-                <p className="text-gray-400">Room Name</p>
-                <p className="text-white font-medium">{roomName}</p>
-              </div>
+            <p className="text-gray-400 text-sm">Room Name</p>
+            <p className="mb-3">{roomName}</p>
 
-              <div>
-                <p className="text-gray-400">Room ID</p>
-                <button
-                  onClick={copyRoomId}
-                  className="text-blue-400 font-mono hover:underline"
-                >
-                  {roomId}
-                </button>
-              </div>
+            <p className="text-gray-400 text-sm">Room ID</p>
+            <button onClick={copyRoomId} className="text-blue-400 font-mono">
+              {roomId}
+            </button>
 
-              <div>
-                <p className="text-gray-400">Created By</p>
-                <p className="text-white">{createdBy}</p>
-              </div>
+            <p className="text-gray-400 text-sm mt-3">Created By</p>
+            <p>{createdBy}</p>
 
-              <div>
-                <p className="text-gray-400">Created At</p>
-                <p className="text-white">
-                  {new Date(createdAt).toLocaleString([], {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-            </div>
+            <p className="text-gray-400 text-sm mt-3">Created At</p>
+            <p>{new Date(createdAt).toLocaleString()}</p>
 
-            <div className="mt-8 flex flex-col gap-3">
-              <button
-                onClick={() => navigate("/join")}
-                className="py-3 rounded-full bg-red-500/70 hover:bg-red-500"
-              >
-                Leave Room
-              </button>
-
-              <button
-                onClick={() => setShowRoomInfo(false)}
-                className="text-sm text-gray-400 hover:text-white"
-              >
-                Close
-              </button>
-            </div>
+            <button
+              onClick={() => setShowRoomInfo(false)}
+              className="mt-6 w-full py-2 rounded-full bg-red-500/70"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
