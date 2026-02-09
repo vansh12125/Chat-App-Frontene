@@ -10,6 +10,8 @@ import avatar from "../assets/avatar.png";
 
 const ChatPage = () => {
   const [roomName, setRoomName] = useState("");
+  const [connected, setConnected] = useState(false);
+
   const [showRoomInfo, setShowRoomInfo] = useState(false);
 
   const { roomId } = useParams();
@@ -52,6 +54,7 @@ const ChatPage = () => {
         new SockJS(`${import.meta.env.VITE_API_URL}/chat`),
       reconnectDelay: 5000,
       onConnect: () => {
+        setConnected(true);
         client.subscribe(`/topic/room/${roomId}`, (msg) => {
           setMessages((prev) => [...prev, JSON.parse(msg.body)]);
           scrollToBottom();
@@ -62,10 +65,18 @@ const ChatPage = () => {
     client.activate();
     stompClientRef.current = client;
 
-    return () => client.deactivate();
+    return () => {
+      setConnected(false);
+      client.deactivate();
+    };
   }, [roomId]);
 
   const sendMessage = () => {
+    if (!connected) {
+      toast.error("Connecting to chat… please wait");
+      return;
+    }
+
     if (input.trim().length === 0) {
       toast.error("Message cannot be empty!");
       setInput("");
@@ -77,7 +88,7 @@ const ChatPage = () => {
       return;
     }
     if (!stompClientRef.current?.connected) return;
-    
+
     stompClientRef.current.publish({
       destination: `/app/sendMessage/${roomId}`,
       body: JSON.stringify({ sender: currentUser, content: input }),
@@ -183,6 +194,7 @@ const ChatPage = () => {
           </button>
 
           <button
+            disabled={!connected}
             onClick={sendMessage}
             className="h-10 w-10 rounded-full bg-green-500/70 hover:bg-green-500
              flex items-center justify-center"
