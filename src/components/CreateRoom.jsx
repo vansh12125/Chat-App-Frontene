@@ -50,7 +50,7 @@ Join my chat room!
 
  Room Name: ${roomName}
  Room ID: ${roomId}
- URL: ${import.meta.env.VITE_API_URL}/chat/${roomId}
+ URL: https://chat-app-frontene.vercel.app/chat/${roomId}
 Open the app and enter this Room ID to join.`;
 
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;

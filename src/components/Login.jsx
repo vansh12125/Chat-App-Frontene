@@ -12,7 +12,6 @@ const Login = () => {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // ✅ redirect AFTER render
   useEffect(() => {
     if (user) {
       navigate("/join");
@@ -34,7 +33,13 @@ const Login = () => {
 
     try {
       const res = await loginUser(data);
-      setUser(res.data); // backend is source of truth
+      console.log("Response:", res);
+      console.log("Response data:", res.data);
+      console.log("Token:", res.data.token);
+      console.log("User:", res.data.user);
+
+      setUser(res.data.user);
+      localStorage.setItem("token", res.data.token);
       toast.success("Login successful 🎉");
       navigate("/join");
     } catch (err) {
@@ -56,9 +61,7 @@ const Login = () => {
           <input
             placeholder="Username"
             value={data.username}
-            onChange={(e) =>
-              setData({ ...data, username: e.target.value })
-            }
+            onChange={(e) => setData({ ...data, username: e.target.value })}
             className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20"
           />
 
@@ -66,9 +69,7 @@ const Login = () => {
             type="password"
             placeholder="Password"
             value={data.password}
-            onChange={(e) =>
-              setData({ ...data, password: e.target.value })
-            }
+            onChange={(e) => setData({ ...data, password: e.target.value })}
             className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20"
           />
 
