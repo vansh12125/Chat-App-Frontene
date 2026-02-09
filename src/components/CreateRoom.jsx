@@ -52,7 +52,7 @@ URL: https://chat-app-frontene.vercel.app/chat/${roomId}`;
   return (
     <div className="w-full h-full flex items-center justify-center px-4">
       
-      {/* MAIN CARD */}
+      
       <div className="w-full max-w-md p-10 rounded-3xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl">
 
         <h1 className="text-2xl font-semibold text-center mb-8">
@@ -84,7 +84,7 @@ URL: https://chat-app-frontene.vercel.app/chat/${roomId}`;
         </button>
       </div>
 
-      {/* MODAL */}
+      
       {open && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-50">
           
