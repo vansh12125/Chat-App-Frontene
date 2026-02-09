@@ -1,13 +1,11 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import toast from "react-hot-toast";
-import { createRoom } from "../services/RoomService";
+import { createRoom, updateUserJoined } from "../services/RoomService";
 import { useNavigate } from "react-router";
-import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { updateUserJoined } from "../services/RoomService";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9]{3,20}$/;
-// const { refreshUser } = useContext(AuthContext);
+
 const CreateRoom = () => {
   const { user, setUser } = useContext(AuthContext);
   const [roomName, setRoomName] = useState("");
@@ -16,9 +14,8 @@ const CreateRoom = () => {
   const navigate = useNavigate();
 
   function validateInput() {
-    if (roomName.trim() === "") {
+    if (!roomName.trim()) {
       toast.error("Room name cannot be empty!");
-      setRoomName("");
       return false;
     }
     if (!USERNAME_REGEX.test(roomName)) {
@@ -29,14 +26,12 @@ const CreateRoom = () => {
   }
 
   async function handleCreateRoom() {
-    if (validateInput()) {
-      const response = await createRoom(roomName, user);
-      setRoomId(response.roomId);
-      setOpen(true);
-      toast.success("Room created successfully 🎉");
-      console.log(roomName, roomId, user);
-      return response;
-    }
+    if (!validateInput()) return;
+
+    const response = await createRoom(roomName, user);
+    setRoomId(response.roomId);
+    setOpen(true);
+    toast.success("Room created successfully 🎉");
   }
 
   async function copyRoomId() {
@@ -45,112 +40,97 @@ const CreateRoom = () => {
   }
 
   function shareOnWhatsApp() {
-    const message = `Hey 
-Join my chat room!
+    const message = `Join my chat room!
 
- Room Name: ${roomName}
- Room ID: ${roomId}
- URL: https://chat-app-frontene.vercel.app/chat/${roomId}
-Open the app and enter this Room ID to join.`;
+Room Name: ${roomName}
+Room ID: ${roomId}
+URL: https://chat-app-frontene.vercel.app/chat/${roomId}`;
 
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(url, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
   }
 
   return (
-    <div
-      className=" min-h-screen flex items-center justify-center 
-                    bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white"
-    >
-      <div
-        className="w-full max-w-md p-10 rounded-3xl backdrop-blur-xl
-                      bg-white/10 border border-white/20 shadow-2xl"
-      >
-        <h1 className="text-2xl font-semibold text-center mb-6">
+    <div className="w-full h-full flex items-center justify-center px-4">
+      
+      {/* MAIN CARD */}
+      <div className="w-full max-w-md p-10 rounded-3xl backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl">
+
+        <h1 className="text-2xl font-semibold text-center mb-8">
           Create Chat Room
         </h1>
 
         <div className="mb-6">
-          <label className="block text-sm text-gray-300 mb-2">Room Name</label>
+          <label className="block text-sm text-gray-300 mb-2">
+            Room Name
+          </label>
           <input
             type="text"
             value={roomName}
             onChange={(e) => setRoomName(e.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && handleCreateRoom()}
+            onKeyDown={(e) => e.key === "Enter" && handleCreateRoom()}
             placeholder="Enter room name"
-            className="w-full px-5 py-3 rounded-full bg-white/10
-                       border border-white/20 text-white
-                       focus:outline-none focus:ring-2
-                       focus:ring-blue-500/50"
+            className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20
+                       text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           />
         </div>
 
         <button
           onClick={handleCreateRoom}
           disabled={!roomName}
-          className="w-full py-3 rounded-full bg-blue-500/70
-                     hover:bg-blue-500 transition disabled:opacity-40"
+          className="w-full py-3 rounded-full bg-blue-500/70 hover:bg-blue-500
+                     transition disabled:opacity-40"
         >
           Create Room
         </button>
       </div>
 
+      {/* MODAL */}
       {open && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-          <div
-            className="bg-slate-900 p-8 rounded-2xl w-96 text-center
-                          border border-white/20 backdrop-blur-xl"
-          >
-            <h2 className="text-xl font-semibold mb-4">Room Created 🎉</h2>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-50">
+          
+          <div className="w-full max-w-sm bg-slate-900/90 p-8 rounded-3xl
+                          border border-white/20 shadow-2xl text-center">
 
-            <p className="text-sm text-gray-400 mb-1">Room ID</p>
+            <h2 className="text-xl font-semibold mb-4">
+              Room Created 🎉
+            </h2>
 
-            <div
-              className="bg-black/40 py-3 rounded-lg font-mono
-                            text-lg tracking-wider mb-4"
-            >
+            <p className="text-sm text-gray-400 mb-2">Room ID</p>
+
+            <div className="bg-black/40 py-3 rounded-xl font-mono text-lg mb-5">
               {roomId}
             </div>
 
-            <button
-              onClick={() => {
-                copyRoomId();
-              }}
-              className="w-full mb-3 py-2 rounded-full
-                         bg-green-400/70 hover:bg-green-500 transition"
-            >
-              Copy Room ID
-            </button>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={copyRoomId}
+                className="py-2 rounded-full bg-blue-500/70 hover:bg-blue-500 transition"
+              >
+                Copy Room ID
+              </button>
 
-            <button
-              onClick={async () => {
-                try {
-                  const res = await updateUserJoined(user.username, roomId);   
-                  console.log("User updated with new room:", res.data);      
+              <button
+                onClick={async () => {
+                  const res = await updateUserJoined(user.username, roomId);
                   setUser(res);
                   navigate(`/chat/${roomId}`);
-                } catch (err) {
-                  console.error(err);
-                  toast.error("Failed to join room");
-                }
-              }}
-              className="w-full mb-3 py-2 rounded-full
-             bg-green-400/70 hover:bg-green-500 transition"
-            >
-              Click To Join Room
-            </button>
+                }}
+                className="py-2 rounded-full bg-green-500/70 hover:bg-green-500 transition"
+              >
+                Join Room
+              </button>
 
-            <button
-              onClick={shareOnWhatsApp}
-              className="w-full mb-5 py-2 rounded-full
-                         bg-emerald-600/70 hover:bg-emerald-600 transition"
-            >
-              Share via WhatsApp
-            </button>
+              <button
+                onClick={shareOnWhatsApp}
+                className="py-2 rounded-full bg-emerald-600/70 hover:bg-emerald-600 transition"
+              >
+                Share on WhatsApp
+              </button>
+            </div>
 
             <button
               onClick={() => setOpen(false)}
-              className="text-sm text-gray-400 hover:text-white"
+              className="mt-5 text-sm text-gray-400 hover:text-white"
             >
               Close
             </button>

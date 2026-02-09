@@ -23,8 +23,22 @@ const AppRoutes = () => {
         }
       />
 
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route
+        path="/login"
+        element={
+          <Layout>
+            <Login />
+          </Layout>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <Layout>
+            <Register />
+          </Layout>
+        }
+      />
 
       <Route
         path="/join"
@@ -40,10 +54,8 @@ const AppRoutes = () => {
       <Route
         path="/chat/:roomId"
         element={
-          <ProtectedRoute>
-            <Layout>
-              <ChatPage />
-            </Layout>
+          <ProtectedRoute> 
+              <ChatPage />    
           </ProtectedRoute>
         }
       />

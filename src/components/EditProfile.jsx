@@ -10,7 +10,14 @@ const EditProfile = () => {
 
   useEffect(() => {
     getProfile()
-      .then(res => setUsername(res.data.username))
+      .then((res) => {
+        console.log("Profile:", res.data);
+        setUsername(res.data.username);
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Session expired. Please login again.");
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -32,9 +39,7 @@ const EditProfile = () => {
 
   return (
     <div className="max-w-md mx-auto backdrop-blur-xl bg-white/10 border border-white/20 p-8 rounded-3xl">
-      <h1 className="text-2xl font-semibold text-white mb-6">
-        Edit Profile
-      </h1>
+      <h1 className="text-2xl font-semibold text-white mb-6">Edit Profile</h1>
 
       <input
         value={username}

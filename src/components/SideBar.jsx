@@ -1,25 +1,12 @@
 import { useNavigate } from "react-router";
-import { logoutUser } from "../services/AuthService";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import toast from "react-hot-toast";
 
 const Sidebar = ({ open, setOpen }) => {
   const navigate = useNavigate();
-  const { setUser, user } = useContext(AuthContext);
+  const {  user ,handleLogout} = useContext(AuthContext);
 
-  async function handleLogout() {
-    try {
-      await logoutUser();
-    } catch (e) {
-      console.error(e);
-    }
-
-    setUser(null);
-    setOpen(false);
-    toast.success("Logged out");
-    navigate("/login");
-  }
+  
 
   return (
     <>

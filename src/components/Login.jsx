@@ -33,11 +33,6 @@ const Login = () => {
 
     try {
       const res = await loginUser(data);
-      console.log("Response:", res);
-      console.log("Response data:", res.data);
-      console.log("Token:", res.data.token);
-      console.log("User:", res.data.user);
-
       setUser(res.data.user);
       localStorage.setItem("token", res.data.token);
       toast.success("Login successful 🎉");
@@ -48,7 +43,7 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white">
+    <div className=" flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-black text-white mt-16">
       <div className="w-full max-w-md p-10 rounded-3xl backdrop-blur-2xl bg-white/10 border border-white/20 shadow-[0_0_60px_rgba(255,255,255,0.08)]">
         <h1 className="text-3xl font-semibold text-center mb-2">
           Welcome Back
