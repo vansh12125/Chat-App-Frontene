@@ -3,10 +3,12 @@ import { api } from "../config/AxiosHelper";
 
 export const createRoom = async (roomName, user) => {
   try {
+    
     const response = await api.post("/rooms/room", {
       roomName,
-      "createdBy": user.username,
+      "createdBy": user,
     });
+    
     return response.data;
   } catch (error) {
     console.error("Error creating room:", error);

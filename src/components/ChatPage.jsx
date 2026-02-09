@@ -76,6 +76,8 @@ const ChatPage = () => {
       toast.error("Message is too long! Max 2000 characters.");
       return;
     }
+    if (!stompClientRef.current?.connected) return;
+    
     stompClientRef.current.publish({
       destination: `/app/sendMessage/${roomId}`,
       body: JSON.stringify({ sender: currentUser, content: input }),
