@@ -33,8 +33,10 @@ const Login = () => {
 
     try {
       const res = await loginUser(data);
-      setUser(res.data.user);
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      setUser(res.data.user);
+
       toast.success("Login successful 🎉");
       navigate("/join");
     } catch (err) {

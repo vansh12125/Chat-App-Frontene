@@ -8,47 +8,32 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await logoutUser(); 
+      await logoutUser();
     } catch (e) {
       console.error(e);
     }
 
-    localStorage.removeItem("token"); 
+    localStorage.removeItem("token");
     setUser(null);
 
     toast.success("Logged out");
     navigate("/login");
   };
 
-  const refreshUser = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await getCurrentUser();
-      setUser(res.data);
-    } catch (err) {
-      handleLogout();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    refreshUser();
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{ user, setUser, loading, refreshUser, handleLogout }}
-    >
+    <AuthContext.Provider value={{ user, setUser, loading, handleLogout }}>
       {children}
     </AuthContext.Provider>
   );
