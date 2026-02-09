@@ -100,7 +100,7 @@ const AppRoutes = () => {
         }
       />
 
-      <Route path="*" element={<Login />} />
+      <Route path="*" element={<Layout><Login /></Layout>} />
     </Routes>
   );
 };
