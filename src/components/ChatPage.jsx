@@ -8,6 +8,7 @@ import SockJS from "sockjs-client";
 import toast from "react-hot-toast";
 import avatar from "../assets/avatar.png";
 import { removeUserJoined } from "../services/AuthService";
+import { updateUserJoined } from "../services/RoomService";
 
 const notificationSound = new Audio("/sounds/notification.mp3");
 
@@ -44,17 +45,24 @@ const ChatPage = () => {
 
     api
       .get(`/rooms/room/${roomId}`)
-      .then((res) => {
+      .then(async (res) => {
         setRoomName(res.data.roomName);
         setCreatedBy(res.data.createdByUsername);
         setCreatedAt(res.data.createdAt);
         setShowDeleteButton(res.data.createdByUserId === currentUserId);
+        try {
+          const updatedUser = await updateUserJoined(currentUser, roomId);
+          setUser(updatedUser);
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        } catch (err) {
+          console.error("Auto join failed", err);
+        }
       })
       .catch(async () => {
         toast.error("Failed to load room");
         navigate("/join");
       });
-  }, [roomId, currentUserId]);
+  }, [roomId, currentUser,currentUserId]);
 
   useEffect(() => {
     if (!roomId) return;
@@ -190,12 +198,12 @@ const ChatPage = () => {
           </div>
 
           <button
-            onClick={()=>{
+            onClick={() => {
               navigate("/join");
             }}
             className="px-2 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
           >
-            <MdClose/>
+            <MdClose />
           </button>
         </div>
       </header>

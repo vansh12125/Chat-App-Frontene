@@ -104,7 +104,7 @@ const EditProfile = () => {
 
       toast.success("Account deleted successfully");
 
-      window.location.href = "/home";
+      window.location.href = "/register";
     } catch (err) {
       toast.error(err.response?.data || "Incorrect password");
     }
@@ -118,7 +118,7 @@ const EditProfile = () => {
 
       <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
 
-        {/* Username */}
+        
         <input
           value={username}
           onChange={(e) => setUsername(e.target.value)}
@@ -128,7 +128,7 @@ const EditProfile = () => {
                      text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
         />
 
-        {/* Current Password */}
+        
         <div className="relative">
           <input
             type={showCurrentPassword ? "text" : "password"}
@@ -148,7 +148,7 @@ const EditProfile = () => {
           </button>
         </div>
 
-        {/* New Password */}
+        
         <div className="relative">
           <input
             type={showNewPassword ? "text" : "password"}
@@ -168,7 +168,7 @@ const EditProfile = () => {
           </button>
         </div>
 
-        {/* Save Button */}
+       
         <button
           onClick={saveProfile}
           className="w-full mt-4 py-3 rounded-full bg-blue-500/80 hover:bg-blue-500 transition"
@@ -176,7 +176,7 @@ const EditProfile = () => {
           Save Changes
         </button>
 
-        {/* Delete Section */}
+        
         {!deleteMode ? (
           <button
             type="button"
