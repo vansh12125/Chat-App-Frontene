@@ -25,3 +25,9 @@ export const removeUserJoined = async (roomId) => {
   const res = await api.post("/auth/leave", { roomId });
   return res.data;
 };
+
+export const deleteAccount = (password) =>
+  api.delete("/auth/delete", {
+    data: { password },
+  });
+
