@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
-import { MdAttachFile, MdSend } from "react-icons/md";
+import { MdAttachFile, MdClose, MdSend } from "react-icons/md";
 import { Client } from "@stomp/stompjs";
 import { useParams, useNavigate } from "react-router";
 import { api } from "../config/AxiosHelper";
@@ -14,7 +14,7 @@ const notificationSound = new Audio("/sounds/notification.mp3");
 const ChatPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
-  const { user ,setUser} = useContext(AuthContext);
+  const { user, setUser } = useContext(AuthContext);
 
   const currentUser = user?.username || "Guest";
   const currentUserId = user?.id || null;
@@ -138,17 +138,16 @@ const ChatPage = () => {
   };
 
   const leaveRoom = async () => {
-  try {
-    if (!window.confirm("Leave this room?")) return;
-    const res = await removeUserJoined(roomId);
-    setUser(res);
-    localStorage.setItem("user", JSON.stringify(res));
-    navigate("/join");
-  } catch (err) {
-    toast.error("Failed to leave room");
-  }
-};
-
+    try {
+      if (!window.confirm("Leave this room?")) return;
+      const res = await removeUserJoined(roomId);
+      setUser(res);
+      localStorage.setItem("user", JSON.stringify(res));
+      navigate("/join");
+    } catch (err) {
+      toast.error("Failed to leave room");
+    }
+  };
 
   const scrollToBottom = () => {
     setTimeout(() => {
@@ -160,20 +159,19 @@ const ChatPage = () => {
   };
 
   const deleteRoom = async (id) => {
-  try {
-    if (!window.confirm("Delete this room permanently?")) return;
-    await api.delete(`/rooms/room/${id}`);
-    const res = await removeUserJoined(id);
-    setUser(res);
-    localStorage.setItem("user", JSON.stringify(res));
+    try {
+      if (!window.confirm("Delete this room permanently?")) return;
+      await api.delete(`/rooms/room/${id}`);
+      const res = await removeUserJoined(id);
+      setUser(res);
+      localStorage.setItem("user", JSON.stringify(res));
 
-    toast.success("Room deleted");
-    navigate("/join");
-  } catch (err) {
-    toast.error(err.response?.data || "Failed to delete room");
-  }
-};
-
+      toast.success("Room deleted");
+      navigate("/join");
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to delete room");
+    }
+  };
 
   const copyRoomId = async () => {
     await navigator.clipboard.writeText(roomId);
@@ -192,10 +190,12 @@ const ChatPage = () => {
           </div>
 
           <button
-            onClick={leaveRoom}
-            className="px-4 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
+            onClick={()=>{
+              navigate("/join");
+            }}
+            className="px-2 py-2 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30"
           >
-            Leave
+            <MdClose/>
           </button>
         </div>
       </header>
@@ -287,10 +287,17 @@ const ChatPage = () => {
             <p className="text-gray-400 text-sm mt-3">Created At</p>
             <p>{new Date(createdAt).toLocaleString()}</p>
 
+            <button
+              onClick={leaveRoom}
+              className="mt-6 w-full py-2 rounded-full bg-red-500/70 hover:bg-red-500/80"
+            >
+              Leave
+            </button>
+
             {showDeleteButton && (
               <button
                 onClick={() => deleteRoom(roomId)}
-                className="mt-6 w-full py-2 rounded-full bg-red-500/70"
+                className="mt-6 w-full py-2 rounded-full bg-red-500/70 hover:bg-red-500/80"
               >
                 Delete Room
               </button>
