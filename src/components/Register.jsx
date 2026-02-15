@@ -4,8 +4,9 @@ import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-const USERNAME_REGEX = /^[a-zA-Z0-9]{3,20}$/;
-const PASSWORD_REGEX = /^[a-zA-Z0-9]{6,20}$/;
+const USERNAME_REGEX =
+  /^(?=.{3,20}$)(?!.*\.\.)(?!.*__)[a-zA-Z0-9](?:[a-zA-Z0-9._]*[a-zA-Z0-9])$/;
+const PASSWORD_REGEX = /^\S{6,20}$/;
 
 const Register = () => {
   const [data, setData] = useState({ username: "", password: "" });
@@ -16,12 +17,14 @@ const Register = () => {
     e.preventDefault();
 
     if (!USERNAME_REGEX.test(data.username)) {
-      toast.error("Username must be 3–20 letters/numbers only");
+      toast.error(
+        "Username must be 3–20 characters. Letters, numbers, . and _ only. No spaces.",
+      );
       return;
     }
 
     if (!PASSWORD_REGEX.test(data.password)) {
-      toast.error("Password must be 6–20 characters");
+      toast.error("Password must be 6–20 characters with no spaces");
       return;
     }
 
@@ -47,6 +50,7 @@ const Register = () => {
         <form onSubmit={submit} className="space-y-5">
           <input
             placeholder="Username"
+            autoComplete="username"
             value={data.username}
             onChange={(e) => setData({ ...data, username: e.target.value })}
             className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20
@@ -58,6 +62,7 @@ const Register = () => {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
+              autoComplete="new-password"
               value={data.password}
               onChange={(e) => setData({ ...data, password: e.target.value })}
               className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20

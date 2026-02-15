@@ -5,8 +5,11 @@ import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 
-const USERNAME_REGEX = /^[a-zA-Z0-9]{3,20}$/;
-const PASSWORD_REGEX = /^[a-zA-Z0-9]{6,20}$/;
+const USERNAME_REGEX =
+/^(?=.{3,20}$)(?!.*\.\.)(?!.*__)[a-zA-Z0-9](?:[a-zA-Z0-9._]*[a-zA-Z0-9])$/;
+
+const PASSWORD_REGEX = /^\S{6,20}$/;
+
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +33,7 @@ const Login = () => {
     }
 
     if (!PASSWORD_REGEX.test(data.password)) {
-      toast.error("Invalid password format");
+      toast.error("Password must be 6–20 characters with no spaces");
       return;
     }
 
@@ -61,6 +64,7 @@ const Login = () => {
           <input
             placeholder="Username"
             value={data.username}
+            autoComplete="username"
             onChange={(e) => setData({ ...data, username: e.target.value })}
             className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20"
           />
@@ -69,6 +73,7 @@ const Login = () => {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
+              autoComplete="current-password"
               value={data.password}
               onChange={(e) => setData({ ...data, password: e.target.value })}
               className="w-full px-5 py-3 rounded-full bg-white/10 border border-white/20"
